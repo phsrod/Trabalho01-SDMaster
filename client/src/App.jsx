@@ -22,11 +22,17 @@ function App() {
     }, []);
 
     async function verificarSessao() {
-        const { data } = await supabase.auth.getSession();
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+            console.error("Erro ao verificar sessão:", error);
+            return;
+        }
 
         if (data.session) {
             setUsuario(data.session.user);
-            await listarTarefas();
+        } else {
+            setUsuario(null);
         }
     }
 
@@ -302,15 +308,30 @@ function App() {
         await listarTarefas();
     }
 
+    async function sair() {
+        await supabase.auth.signOut();
+
+        setUsuario(null);
+        setUsuarioBackend(null);
+        setTarefas([]);
+        setMensagem("Logout realizado com sucesso!");
+    }
+
     return (
         <div>
             <h1>Gerenciador de Tarefas</h1>
 
             {usuario && (
-                <p>
-                    Usuário autenticado:{" "}
-                    {usuario.email}
-                </p>
+                <>
+                    <p>
+                        Usuário autenticado:{" "}
+                        {usuario.email}
+                    </p>
+
+                    <button onClick={sair}>
+                        Sair
+                    </button>
+                </>
             )}
 
             <hr />
