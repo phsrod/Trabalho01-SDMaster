@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Header, HTTPException
 from app.models.tarefa import (TarefaCriacao, TarefaAtualizacao)
-from app.dependencies.autenticacao import (obter_token, obter_usuario, criar_cliente_autenticado)
-from app.models.tarefa import TarefaCriacao
+from app.dependencies.autenticacao import (obter_token, obter_usuario)
+from app.database import criar_cliente_autenticado
 
 
 router = APIRouter()
@@ -47,6 +47,7 @@ def listar_tarefas(
     authorization: str | None = Header(default=None)
 ):
     token = obter_token(authorization)
+    usuario = obter_usuario(authorization)
 
     cliente = criar_cliente_autenticado(token)
 
@@ -54,6 +55,7 @@ def listar_tarefas(
         cliente
         .table("tasks")
         .select("*")
+        .eq("user_id", usuario.id)
         .execute()
     )
 

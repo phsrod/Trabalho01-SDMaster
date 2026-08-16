@@ -1,7 +1,6 @@
 from fastapi import Header, HTTPException
-from supabase import create_client
 
-from app.config import SUPABASE_URL, SUPABASE_KEY, supabase
+from app.database import supabase
 
 
 def obter_token(authorization: str | None):
@@ -32,14 +31,3 @@ def obter_usuario(authorization: str | None):
         )
 
     return resposta.user
-
-
-def criar_cliente_autenticado(token: str):
-    cliente = create_client(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    )
-
-    cliente.postgrest.auth(token)
-
-    return cliente
