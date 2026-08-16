@@ -1,6 +1,10 @@
-from fastapi import Header, HTTPException
+from dataclasses import dataclass
+from typing import Any
 
-from app.database import supabase
+from fastapi import Header, HTTPException
+from supabase import Client
+
+from app.database import criar_cliente_autenticado, supabase
 
 
 def obter_token(authorization: str | None):
@@ -31,3 +35,22 @@ def obter_usuario(authorization: str | None):
         )
 
     return resposta.user
+
+
+@dataclass
+class ClienteAutenticado:
+    cliente: Client
+    usuario: Any
+
+
+def obter_cliente_autenticado(
+    authorization: str | None = Header(default=None)
+) -> ClienteAutenticado:
+    token = obter_token(authorization)
+    usuario = obter_usuario(authorization)
+    cliente = criar_cliente_autenticado(token)
+
+    return ClienteAutenticado(
+        cliente=cliente,
+        usuario=usuario
+    )

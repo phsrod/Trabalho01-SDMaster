@@ -1,24 +1,14 @@
-from fastapi import APIRouter, Header, HTTPException
-from app.models.tarefa import (TarefaCriacao, TarefaAtualizacao)
-from app.dependencies.autenticacao import (obter_token, obter_usuario)
-from app.database import criar_cliente_autenticado
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.dependencies.autenticacao import ClienteAutenticado, obter_cliente_autenticado
+from app.models.tarefa import TarefaAtualizacao, TarefaCriacao
 
 
 router = APIRouter()
 
 
-@router.post("/tasks")
-def criar_tarefa(
-    tarefa: TarefaCriacao,
-    authorization: str | None = Header(default=None)
-):
-    token = obter_token(authorization)
-    usuario = obter_usuario(authorization)
-
-    cliente = criar_cliente_autenticado(token)
-
+def montar_dados(tarefa, user_id=None):
     dados = {
-        "user_id": usuario.id,
         "title": tarefa.title,
         "description": tarefa.description,
         "due_date": (
@@ -30,10 +20,21 @@ def criar_tarefa(
         "status": tarefa.status
     }
 
+    if user_id:
+        dados["user_id"] = user_id
+
+    return dados
+
+
+@router.post("/tasks")
+def criar_tarefa(
+    tarefa: TarefaCriacao,
+    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
+):
     resposta = (
-        cliente
+        auth.cliente
         .table("tasks")
-        .insert(dados)
+        .insert(montar_dados(tarefa, auth.usuario.id))
         .execute()
     )
 
@@ -44,18 +45,13 @@ def criar_tarefa(
 
 @router.get("/tasks")
 def listar_tarefas(
-    authorization: str | None = Header(default=None)
+    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
 ):
-    token = obter_token(authorization)
-    usuario = obter_usuario(authorization)
-
-    cliente = criar_cliente_autenticado(token)
-
     resposta = (
-        cliente
+        auth.cliente
         .table("tasks")
         .select("*")
-        .eq("user_id", usuario.id)
+        .eq("user_id", auth.usuario.id)
         .execute()
     )
 
@@ -65,31 +61,14 @@ def listar_tarefas(
 def atualizar_tarefa(
     task_id: str,
     tarefa: TarefaAtualizacao,
-    authorization: str | None = Header(default=None)
+    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
 ):
-    token = obter_token(authorization)
-    usuario = obter_usuario(authorization)
-
-    cliente = criar_cliente_autenticado(token)
-
-    dados = {
-        "title": tarefa.title,
-        "description": tarefa.description,
-        "due_date": (
-            tarefa.due_date.isoformat()
-            if tarefa.due_date
-            else None
-        ),
-        "priority": tarefa.priority,
-        "status": tarefa.status
-    }
-
     resposta = (
-        cliente
+        auth.cliente
         .table("tasks")
-        .update(dados)
+        .update(montar_dados(tarefa))
         .eq("id", task_id)
-        .eq("user_id", usuario.id)
+        .eq("user_id", auth.usuario.id)
         .execute()
     )
 
@@ -107,19 +86,14 @@ def atualizar_tarefa(
 @router.delete("/tasks/{task_id}")
 def excluir_tarefa(
     task_id: str,
-    authorization: str | None = Header(default=None)
+    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
 ):
-    token = obter_token(authorization)
-    usuario = obter_usuario(authorization)
-
-    cliente = criar_cliente_autenticado(token)
-
     resposta = (
-        cliente
+        auth.cliente
         .table("tasks")
         .delete()
         .eq("id", task_id)
-        .eq("user_id", usuario.id)
+        .eq("user_id", auth.usuario.id)
         .execute()
     )
 
