@@ -1,6 +1,37 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+async function apiFetch(caminho, { method = "GET", body } = {}) {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session) {
+        return {
+            ok: false,
+            autenticado: false,
+            dados: { detail: "Usuário não autenticado." }
+        };
+    }
+
+    const token = data.session.access_token;
+
+    const headers = { Authorization: `Bearer ${token}` };
+    if (body) {
+        headers["Content-Type"] = "application/json";
+    }
+
+    const resposta = await fetch(`${API_URL}${caminho}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+    });
+
+    const dados = await resposta.json();
+
+    return { ok: resposta.ok, autenticado: true, dados };
+}
+
 function App() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
@@ -31,6 +62,7 @@ function App() {
 
         if (data.session) {
             setUsuario(data.session.user);
+            await listarTarefas();
         } else {
             setUsuario(null);
         }
@@ -49,9 +81,7 @@ function App() {
             return;
         }
 
-        setMensagem(
-            "Cadastro realizado! Verifique seu email."
-        );
+        setMensagem("Cadastro realizado! Verifique seu email.");
     }
 
     async function entrar() {
@@ -77,129 +107,70 @@ function App() {
     async function testarBackend() {
         setMensagem("");
 
-        const { data, error } =
-            await supabase.auth.getSession();
+        const { ok, dados } = await apiFetch("/me");
 
-        if (error || !data.session) {
-            setMensagem("Usuário não autenticado.");
-            return;
-        }
-
-        const token = data.session.access_token;
-
-        const resposta = await fetch(
-            "http://127.0.0.1:8000/me",
-            {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok) {
+        if (!ok) {
             setMensagem(
-                resultado.detail ||
-                "Erro ao acessar o backend."
+                dados.detail || "Erro ao acessar o backend."
             );
             return;
         }
 
-        setUsuarioBackend(resultado);
-        setMensagem(
-            "Backend respondeu com sucesso!"
-        );
+        setUsuarioBackend(dados);
+        setMensagem("Backend respondeu com sucesso!");
     }
 
-    async function criarTarefa() {
-        setMensagem("");
-
-        const { data, error } =
-            await supabase.auth.getSession();
-
-        if (error || !data.session) {
-            setMensagem("Usuário não autenticado.");
-            return;
-        }
-
-        const token = data.session.access_token;
-
-        const tarefa = {
+    function montarPayload() {
+        return {
             title: titulo,
             description: descricao || null,
             due_date: dataLimite || null,
             priority: prioridade,
             status: status
         };
+    }
 
-        const resposta = await fetch(
-            "http://127.0.0.1:8000/tasks",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(tarefa)
-            }
-        );
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok) {
-            setMensagem(
-                resultado.detail ||
-                "Erro ao criar tarefa."
-            );
-            return;
-        }
-
-        setMensagem(
-            "Tarefa criada com sucesso!"
-        );
-
+    function limparFormulario() {
         setTitulo("");
         setDescricao("");
         setDataLimite("");
         setPrioridade("Baixa");
         setStatus("Pendente");
+    }
+
+    async function criarTarefa() {
+        setMensagem("");
+
+        const { ok, dados } = await apiFetch("/tasks", {
+            method: "POST",
+            body: montarPayload()
+        });
+
+        if (!ok) {
+            setMensagem(dados.detail || "Erro ao criar tarefa.");
+            return;
+        }
+
+        setMensagem("Tarefa criada com sucesso!");
+
+        limparFormulario();
 
         await listarTarefas();
     }
 
     async function listarTarefas() {
-        const { data, error } =
-            await supabase.auth.getSession();
+        const { ok, autenticado, dados } = await apiFetch("/tasks");
 
-        if (error || !data.session) {
+        if (!autenticado) {
             return;
         }
 
-        const token = data.session.access_token;
-
-        const resposta = await fetch(
-            "http://127.0.0.1:8000/tasks",
-            {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok) {
-            setMensagem(
-                resultado.detail ||
-                "Erro ao listar tarefas."
-            );
+        if (!ok) {
+            setMensagem(dados.detail || "Erro ao listar tarefas.");
             return;
         }
 
-        setTarefas(resultado);
+        setTarefas(dados);
     }
 
     function iniciarEdicao(tarefa) {
@@ -215,57 +186,24 @@ function App() {
     async function atualizarTarefa() {
         setMensagem("");
 
-        const { data, error } =
-            await supabase.auth.getSession();
-
-        if (error || !data.session) {
-            setMensagem("Usuário não autenticado.");
-            return;
-        }
-
-        const token = data.session.access_token;
-
-        const tarefa = {
-            title: titulo,
-            description: descricao || null,
-            due_date: dataLimite || null,
-            priority: prioridade,
-            status: status
-        };
-
-        const resposta = await fetch(
-            `http://127.0.0.1:8000/tasks/${tarefaEditando.id}`,
+        const { ok, dados } = await apiFetch(
+            `/tasks/${tarefaEditando.id}`,
             {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(tarefa)
+                body: montarPayload()
             }
         );
 
-        const resultado = await resposta.json();
-
-        if (!resposta.ok) {
-            setMensagem(
-                resultado.detail ||
-                "Erro ao atualizar tarefa."
-            );
+        if (!ok) {
+            setMensagem(dados.detail || "Erro ao atualizar tarefa.");
             return;
         }
 
-        setMensagem(
-            "Tarefa atualizada com sucesso!"
-        );
+        setMensagem("Tarefa atualizada com sucesso!");
 
         setTarefaEditando(null);
 
-        setTitulo("");
-        setDescricao("");
-        setDataLimite("");
-        setPrioridade("Baixa");
-        setStatus("Pendente");
+        limparFormulario();
 
         await listarTarefas();
     }
@@ -273,33 +211,12 @@ function App() {
     async function excluirTarefa(id) {
         setMensagem("");
 
-        const { data, error } =
-            await supabase.auth.getSession();
+        const { ok, dados } = await apiFetch(`/tasks/${id}`, {
+            method: "DELETE"
+        });
 
-        if (error || !data.session) {
-            setMensagem("Usuário não autenticado.");
-            return;
-        }
-
-        const token = data.session.access_token;
-
-        const resposta = await fetch(
-            `http://127.0.0.1:8000/tasks/${id}`,
-            {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-
-        const resultado = await resposta.json();
-
-        if (!resposta.ok) {
-            setMensagem(
-                resultado.detail ||
-                "Erro ao excluir tarefa."
-            );
+        if (!ok) {
+            setMensagem(dados.detail || "Erro ao excluir tarefa.");
             return;
         }
 
