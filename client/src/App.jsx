@@ -3,6 +3,16 @@ import { supabase } from "./supabaseClient";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
+function obterDataDeHoje() {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, "0");
+    const dia = String(agora.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+}
+
+const hoje = obterDataDeHoje();
+
 async function apiFetch(caminho, { method = "GET", body } = {}) {
     const { data, error } = await supabase.auth.getSession();
 
@@ -29,6 +39,11 @@ async function apiFetch(caminho, { method = "GET", body } = {}) {
 
     const dados = await resposta.json();
 
+    // Erros de validação do FastAPI (422) vêm como lista {loc, msg, type}
+    if (Array.isArray(dados?.detail) && dados.detail.length > 0) {
+        dados.detail = dados.detail.map((d) => d.msg).join("; ");
+    }
+
     return { ok: resposta.ok, autenticado: true, dados };
 }
 
@@ -48,10 +63,6 @@ function App() {
     const [tarefas, setTarefas] = useState([]);
     const [tarefaEditando, setTarefaEditando] = useState(null);
 
-    useEffect(() => {
-        verificarSessao();
-    }, []);
-
     async function verificarSessao() {
         const { data, error } = await supabase.auth.getSession();
 
@@ -67,6 +78,13 @@ function App() {
             setUsuario(null);
         }
     }
+
+    useEffect(() => {
+        // Restauração de sessão no carregamento é intencional:
+        // setState aqui é assíncrono (após getSession) e roda uma única vez.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        verificarSessao();
+    }, []);
 
     async function cadastrar() {
         setMensagem("");
@@ -120,11 +138,25 @@ function App() {
         setMensagem("Backend respondeu com sucesso!");
     }
 
+    function validarFormulario() {
+        if (!titulo.trim()) {
+            setMensagem("Preencha o título da tarefa.");
+            return false;
+        }
+
+        if (!dataLimite) {
+            setMensagem("Preencha a data limite.");
+            return false;
+        }
+
+        return true;
+    }
+
     function montarPayload() {
         return {
             title: titulo,
             description: descricao || null,
-            due_date: dataLimite || null,
+            due_date: dataLimite,
             priority: prioridade,
             status: status
         };
@@ -140,6 +172,10 @@ function App() {
 
     async function criarTarefa() {
         setMensagem("");
+
+        if (!validarFormulario()) {
+            return;
+        }
 
         const { ok, dados } = await apiFetch("/tasks", {
             method: "POST",
@@ -185,6 +221,10 @@ function App() {
 
     async function atualizarTarefa() {
         setMensagem("");
+
+        if (!validarFormulario()) {
+            return;
+        }
 
         const { ok, dados } = await apiFetch(
             `/tasks/${tarefaEditando.id}`,
@@ -337,6 +377,7 @@ function App() {
 
                         <input
                             type="date"
+                            min={hoje}
                             value={dataLimite}
                             onChange={(e) =>
                                 setDataLimite(
