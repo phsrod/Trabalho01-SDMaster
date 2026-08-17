@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies.autenticacao import ClienteAutenticado, obter_cliente_autenticado
-from app.models.tarefa import TarefaAtualizacao, TarefaCriacao
+from app.dependencies.auth import ClienteAutenticado, obter_cliente_autenticado
+from app.models.task import TarefaAtualizacao, TarefaCriacao
 
 
 router = APIRouter()

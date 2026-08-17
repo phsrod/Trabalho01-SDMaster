@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Header
 
-from app.dependencies.autenticacao import obter_usuario
+from app.dependencies.auth import obter_usuario
 
 
 router = APIRouter()
