@@ -8,10 +8,22 @@ const priorityLabels = {
   baixa: 'Baixa'
 }
 
+const priorityStyles = {
+  alta: 'bg-red-50 text-red-700 border border-red-200',
+  media: 'bg-amber-50 text-amber-700 border border-amber-200',
+  baixa: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+}
+
 const statusLabels = {
   pendente: 'Pendente',
   em_andamento: 'Em andamento',
   concluida: 'Concluída'
+}
+
+const statusStyles = {
+  pendente: 'bg-red-50 text-red-700 border border-red-200',
+  em_andamento: 'bg-amber-50 text-amber-700 border border-amber-200',
+  concluida: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
 }
 
 function TaskList({
@@ -96,7 +108,7 @@ function TaskList({
                       className="text-xs text-slate-400"
                       dateTime={task.dueDate}
                     >
-                      {task.dueDate}
+                      Data limite: {task.dueDate}
                     </time>
                   </div>
 
@@ -105,11 +117,11 @@ function TaskList({
                   </p>
 
                   <div className="mt-3 flex gap-2 text-xs font-semibold">
-                    <span className="rounded bg-amber-50 px-2 py-1 text-amber-700">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs ${priorityStyles[task.priority] ?? 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                       {priorityLabels[task.priority]}
                     </span>
 
-                    <span className="rounded bg-blue-50 px-2 py-1 text-brand">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs ${statusStyles[task.status] ?? 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                       {statusLabels[task.status]}
                     </span>
                   </div>

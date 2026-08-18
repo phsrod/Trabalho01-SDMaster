@@ -7,6 +7,36 @@ const labels = {
   em_andamento: 'Em andamento'
 }
 
+const priorityLabels = {
+  alta: 'Alta',
+  media: 'Média',
+  baixa: 'Baixa'
+}
+
+const priorityStyles = {
+  alta: 'bg-red-50 text-red-700 border border-red-200',
+  media: 'bg-amber-50 text-amber-700 border border-amber-200',
+  baixa: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+}
+
+const statusStyles = {
+  pendente: 'bg-red-50 text-red-700 border border-red-200',
+  em_andamento: 'bg-amber-50 text-amber-700 border border-amber-200',
+  concluida: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+}
+
+const priorityWeight = { alta: 3, media: 2, baixa: 1 }
+
+function getTaskScore(task) {
+  const daysLeft = Math.max(
+    (new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24),
+    0
+  )
+  const priority = priorityWeight[task.priority] ?? 1
+  // Mais urgente = mais pontos; prioridade desempata
+  return (30 - daysLeft) * 10 + priority
+}
+
 function getGreeting() {
   const hour = new Date().getHours()
   if (hour < 12) return 'Bom dia'
@@ -31,6 +61,7 @@ function HomePage() {
 
   const focusTasks = tasks
     .filter((task) => task.status !== 'concluida')
+    .sort((a, b) => getTaskScore(b) - getTaskScore(a))
     .slice(0, 3)
 
   return (
@@ -57,7 +88,7 @@ function HomePage() {
 
       <div className="mb-5 grid gap-4 md:grid-cols-3">
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="inline-block rounded-full bg-amber-50 p-2 text-amber-700">
+          <span className="inline-block rounded-full bg-red-50 p-2 text-red-700">
             <Icon name="clock" />
           </span>
 
@@ -75,7 +106,7 @@ function HomePage() {
         </article>
 
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="inline-block rounded-full bg-blue-50 p-2 text-brand">
+          <span className="inline-block rounded-full bg-amber-50 p-2 text-amber-700">
             <Icon name="spark" />
           </span>
 
@@ -147,9 +178,19 @@ function HomePage() {
                   {task.description}
                 </p>
 
-                <small className="mt-2 block text-xs text-slate-400">
-                  {labels[task.status]} - {task.dueDate}
-                </small>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs ${priorityStyles[task.priority] ?? 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                    {priorityLabels[task.priority]}
+                  </span>
+
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs ${statusStyles[task.status] ?? 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                    {labels[task.status]}
+                  </span>
+
+                  <span className="text-slate-400">
+                    Data limite: {task.dueDate}
+                  </span>
+                </div>
               </div>
             ))
           ) : (
