@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { TaskContext } from './taskContext'
+import { supabase } from '../supabaseClient'
+import * as api from '../api'
 
-const STORAGE_KEY = 'tasks_by_account_v1'
-const USERS_STORAGE_KEY = 'taskly_users_v1'
-const SESSION_STORAGE_KEY = 'taskly_session_v1'
 const STATUS_ORDER = {
   pendente: 1,
   em_andamento: 2,
@@ -18,48 +17,6 @@ const EMPTY_TASK_FORM = {
   status: 'pendente',
 }
 
-const SAMPLE_TASKS = [
-  { id: 'sample-1', title: 'Revisar proposta de identidade visual', description: 'Ajustar os últimos elementos e organizar os arquivos de apresentação.', dueDate: '2026-08-16', priority: 'alta', status: 'em_andamento' },
-  { id: 'sample-2', title: 'Preparar pauta da reunião semanal', description: 'Definir prioridades, entregas e pontos que precisam de decisão.', dueDate: '2026-08-17', priority: 'media', status: 'pendente' },
-  { id: 'sample-3', title: 'Organizar referências do projeto Aurora', description: 'Consolidar imagens aprovadas e registrar os links de origem.', dueDate: '2026-08-19', priority: 'baixa', status: 'pendente' },
-  { id: 'sample-4', title: 'Atualizar cronograma do projeto', description: 'Registrar as entregas concluídas nesta semana.', dueDate: '2026-08-15', priority: 'media', status: 'concluida' },
-]
-
-function loadTasksByAccount() {
-  const raw = localStorage.getItem(STORAGE_KEY)
-
-  if (!raw) {
-    return { 'meu-espaco': SAMPLE_TASKS }
-  }
-
-  try {
-    const parsed = JSON.parse(raw)
-    return typeof parsed === 'object' && parsed !== null ? parsed : {}
-  } catch {
-    return { 'meu-espaco': SAMPLE_TASKS }
-  }
-}
-
-function saveTasksByAccount(tasksByAccount) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasksByAccount))
-}
-
-function loadUsers() {
-  const raw = localStorage.getItem(USERS_STORAGE_KEY)
-  if (!raw) return []
-
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-function loadSession() {
-  return localStorage.getItem(SESSION_STORAGE_KEY) || ''
-}
-
 function normalizeTask(form) {
   return {
     title: form.title.trim(),
@@ -71,8 +28,8 @@ function normalizeTask(form) {
 }
 
 function validateTaskForm(form) {
-  if (!form.title.trim()) return 'Informe o titulo da tarefa.'
-  if (!form.description.trim()) return 'Informe a descricao da tarefa.'
+  if (!form.title.trim()) return 'Informe o título da tarefa.'
+  if (!form.description.trim()) return 'Informe a descrição da tarefa.'
   if (!form.dueDate) return 'Informe a data limite da tarefa.'
   if (!form.priority) return 'Informe a prioridade da tarefa.'
   if (!form.status) return 'Informe o status da tarefa.'
@@ -80,58 +37,89 @@ function validateTaskForm(form) {
 }
 
 export function TaskProvider({ children }) {
-  const [activeAccount, setActiveAccount] = useState(loadSession)
-  const [tasksByAccount, setTasksByAccount] = useState(loadTasksByAccount)
+  const [activeAccount, setActiveAccount] = useState('')
+  const [activeUserName, setActiveUserName] = useState('')
+  const [tasks, setTasks] = useState([])
   const [taskForm, setTaskForm] = useState(EMPTY_TASK_FORM)
   const [editingTaskId, setEditingTaskId] = useState(null)
   const [feedback, setFeedback] = useState({ type: '', message: '' })
+  const feedbackTimeoutRef = useRef(null)
 
-  const tasks = useMemo(() => {
-    if (!activeAccount) return []
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current)
+      }
+    }
+  }, [])
 
-    const accountTasks = tasksByAccount[activeAccount] || []
-
-    return [...accountTasks].sort((a, b) => {
-      const statusDiff = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-      if (statusDiff !== 0) return statusDiff
-      return a.dueDate.localeCompare(b.dueDate)
-    })
-  }, [activeAccount, tasksByAccount])
-
-  function setMessage(type, message) {
+  const setMessage = useCallback((type, message) => {
     setFeedback({ type, message })
+
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current)
+    }
+
+    feedbackTimeoutRef.current = setTimeout(() => {
+      setFeedback({ type: '', message: '' })
+    }, 10000)
+  }, [])
+
+  function applySession(session) {
+    if (!session?.user) return
+
+    setActiveAccount(session.user.email || session.user.id)
+    setActiveUserName(session.user.user_metadata?.name || '')
   }
+
+  const refreshTasks = useCallback(async () => {
+    try {
+      const fetchedTasks = await api.listTasks()
+
+      setTasks([...fetchedTasks].sort((a, b) => {
+        const statusDiff = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+        if (statusDiff !== 0) return statusDiff
+        return a.dueDate.localeCompare(b.dueDate)
+      }))
+    } catch (error) {
+      setMessage('danger', error.message || 'Não foi possível carregar as tarefas.')
+    }
+  }, [setMessage])
+
+  useEffect(() => {
+    async function restoreSession() {
+      const { data } = await supabase.auth.getSession()
+
+      if (data.session) {
+        applySession(data.session)
+        refreshTasks()
+      }
+    }
+
+    restoreSession()
+  }, [refreshTasks])
 
   function resetTaskForm() {
     setTaskForm(EMPTY_TASK_FORM)
     setEditingTaskId(null)
   }
 
-  function updateTasksForAccount(nextTasks) {
-    setTasksByAccount((current) => {
-      const updated = {
-        ...current,
-        [activeAccount]: nextTasks,
-      }
-      saveTasksByAccount(updated)
-      return updated
+  async function loginUser(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
     })
-  }
 
-  function loginUser(email, password) {
-    const normalizedEmail = email.trim().toLowerCase()
-    const user = loadUsers().find((item) => item.email === normalizedEmail && item.password === password)
-
-    if (!user) {
-      return { success: false, message: 'E-mail ou senha invalidos.' }
+    if (error || !data.session) {
+      return { success: false, message: 'E-mail ou senha inválidos.' }
     }
 
-    setActiveAccount(user.id)
-    localStorage.setItem(SESSION_STORAGE_KEY, user.id)
+    applySession(data.session)
+    await refreshTasks()
     return { success: true }
   }
 
-  function registerUser(name, email, password) {
+  async function registerUser(name, email, password) {
     const normalizedName = name.trim()
     const normalizedEmail = email.trim().toLowerCase()
 
@@ -143,22 +131,39 @@ export function TaskProvider({ children }) {
       return { success: false, message: 'A senha deve ter pelo menos 6 caracteres.' }
     }
 
-    const users = loadUsers()
-    if (users.some((user) => user.email === normalizedEmail)) {
-      return { success: false, message: 'Este e-mail ja esta cadastrado.' }
+    const { data, error } = await supabase.auth.signUp({
+      email: normalizedEmail,
+      password,
+      options: { data: { name: normalizedName } },
+    })
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message === 'User already registered'
+          ? 'Este e-mail já está cadastrado.'
+          : error.message,
+      }
     }
 
-    const user = { id: crypto.randomUUID(), name: normalizedName, email: normalizedEmail, password }
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify([...users, user]))
-    setActiveAccount(user.id)
-    localStorage.setItem(SESSION_STORAGE_KEY, user.id)
+    if (!data.session) {
+      return {
+        success: false,
+        message: 'Cadastro criado! Confirme seu e-mail para ativar a conta.',
+      }
+    }
+
+    applySession(data.session)
+    await refreshTasks()
     return { success: true }
   }
 
-  function logoutAccount() {
+  async function logoutAccount() {
+    await supabase.auth.signOut()
     setActiveAccount('')
+    setActiveUserName('')
+    setTasks([])
     resetTaskForm()
-    localStorage.removeItem(SESSION_STORAGE_KEY)
   }
 
   function updateTaskField(name, value) {
@@ -168,7 +173,7 @@ export function TaskProvider({ children }) {
     }))
   }
 
-  function submitTask(event) {
+  async function submitTask(event) {
     event.preventDefault()
 
     if (!activeAccount) {
@@ -184,39 +189,27 @@ export function TaskProvider({ children }) {
 
     const normalizedTask = normalizeTask(taskForm)
 
-    if (editingTaskId) {
-      const updatedTasks = tasks.map((task) => {
-        if (task.id !== editingTaskId) return task
-        return {
-          ...task,
-          ...normalizedTask,
-          updatedAt: new Date().toISOString(),
-        }
-      })
+    try {
+      if (editingTaskId) {
+        await api.updateTask(editingTaskId, normalizedTask)
+        setMessage('success', 'Tarefa atualizada com sucesso.')
+      } else {
+        await api.createTask(normalizedTask)
+        setMessage('success', 'Tarefa criada com sucesso.')
+      }
 
-      updateTasksForAccount(updatedTasks)
       resetTaskForm()
-      setMessage('success', 'Tarefa atualizada com sucesso.')
-      return
+      await refreshTasks()
+    } catch (error) {
+      setMessage('danger', error.message || 'Não foi possível salvar a tarefa.')
     }
-
-    const newTask = {
-      id: crypto.randomUUID(),
-      ...normalizedTask,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    updateTasksForAccount([...tasks, newTask])
-    resetTaskForm()
-    setMessage('success', 'Tarefa criada com sucesso.')
   }
 
   function startTaskEdit(taskId) {
     const task = tasks.find((item) => item.id === taskId)
 
     if (!task) {
-      setMessage('danger', 'Nao foi possivel localizar a tarefa.')
+      setMessage('danger', 'Não foi possível localizar a tarefa.')
       return
     }
 
@@ -231,38 +224,50 @@ export function TaskProvider({ children }) {
     setMessage('success', `Editando tarefa: ${task.title}`)
   }
 
-  function deleteTask(taskId) {
+  async function deleteTask(taskId) {
     const task = tasks.find((item) => item.id === taskId)
 
     if (!task) {
-      setMessage('danger', 'Nao foi possivel localizar a tarefa.')
+      setMessage('danger', 'Não foi possível localizar a tarefa.')
       return
     }
 
-    const updatedTasks = tasks.filter((item) => item.id !== taskId)
-    updateTasksForAccount(updatedTasks)
+    try {
+      await api.deleteTask(taskId)
 
-    if (editingTaskId === taskId) {
-      resetTaskForm()
+      if (editingTaskId === taskId) {
+        resetTaskForm()
+      }
+
+      setMessage('success', `Tarefa "${task.title}" removida com sucesso.`)
+      await refreshTasks()
+    } catch (error) {
+      setMessage('danger', error.message || 'Não foi possível excluir a tarefa.')
     }
-
-    setMessage('success', `Tarefa "${task.title}" removida com sucesso.`)
   }
 
-  function toggleTaskStatus(taskId) {
-    const updatedTasks = tasks.map((task) => task.id === taskId
-      ? { ...task, status: task.status === 'concluida' ? 'pendente' : 'concluida', updatedAt: new Date().toISOString() }
-      : task)
-    updateTasksForAccount(updatedTasks)
+  async function toggleTaskStatus(taskId) {
+    const task = tasks.find((item) => item.id === taskId)
+    if (!task) return
+
+    const nextStatus = task.status === 'concluida' ? 'pendente' : 'concluida'
+
+    try {
+      await api.updateTask(taskId, { ...task, status: nextStatus })
+      await refreshTasks()
+    } catch (error) {
+      setMessage('danger', error.message || 'Não foi possível atualizar a tarefa.')
+    }
   }
 
   function cancelTaskEditing() {
     resetTaskForm()
-    setMessage('success', 'Edicao cancelada.')
+    setMessage('success', 'Edição cancelada.')
   }
 
   const contextValue = {
     activeAccount,
+    activeUserName,
     tasks,
     taskForm,
     editingTaskId,

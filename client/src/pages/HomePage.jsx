@@ -8,7 +8,7 @@ const labels = {
 }
 
 function HomePage() {
-  const { tasks } = useTaskContext()
+  const { tasks, activeUserName } = useTaskContext()
 
   const pending = tasks.filter(
     (task) => task.status === 'pendente'
@@ -35,7 +35,7 @@ function HomePage() {
           </p>
 
           <h1 className="text-3xl font-bold tracking-tight">
-            Bom dia, Lucia.
+            Bom dia{activeUserName ? `, ${activeUserName}` : ''}.
           </h1>
         </div>
 

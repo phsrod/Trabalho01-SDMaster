@@ -30,8 +30,8 @@ function MainLayout() {
   const { activeAccount, logoutAccount } = useTaskContext()
   const navigate = useNavigate()
 
-  function handleLogout() {
-    logoutAccount()
+  async function handleLogout() {
+    await logoutAccount()
     navigate('/login', { replace: true })
   }
 

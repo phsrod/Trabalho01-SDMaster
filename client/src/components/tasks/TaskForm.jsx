@@ -10,6 +10,13 @@ function TaskForm() {
     cancelTaskEditing,
   } = useTaskContext()
 
+  const today = new Date()
+  const minDueDate = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-')
+
   return (
     <article className="rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="task-form-title">
       <div className="p-6">
@@ -20,7 +27,7 @@ function TaskForm() {
         <form className="grid gap-4" onSubmit={submitTask}>
           <div>
             <label className="mb-1.5 block text-sm font-semibold" htmlFor="title">
-              Titulo da tarefa
+              Título da tarefa
             </label>
             <input
               id="title"
@@ -36,7 +43,7 @@ function TaskForm() {
 
           <div>
             <label className="mb-1.5 block text-sm font-semibold" htmlFor="description">
-              Descricao
+              Descrição
             </label>
             <textarea
               id="description"
@@ -59,6 +66,7 @@ function TaskForm() {
               name="dueDate"
               type="date"
               className="h-11 w-full rounded-lg border border-slate-300 px-3 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
+              min={minDueDate}
               value={taskForm.dueDate}
               onChange={(event) => updateTaskField(event.target.name, event.target.value)}
               required

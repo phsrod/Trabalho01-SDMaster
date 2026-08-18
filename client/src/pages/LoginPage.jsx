@@ -1,31 +1,44 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useTaskContext } from '../context/useTaskContext'
+import Icon from '../components/common/Icon'
 
 function LoginPage() {
   const { activeAccount, loginUser } = useTaskContext()
   const navigate = useNavigate()
 
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({
     email: '',
     password: ''
   })
 
+  useEffect(() => {
+    if (!error) return
+
+    const timer = setTimeout(() => {
+      setError('')
+    }, 10000)
+
+    return () => clearTimeout(timer)
+  }, [error])
+
   if (activeAccount) {
     return <Navigate to="/" replace />
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
-    const result = loginUser(
+    const result = await loginUser(
       form.email,
       form.password
     )
 
     if (!result.success) {
       setError(result.message)
+      setForm({ email: '', password: '' })
       return
     }
 
@@ -102,16 +115,27 @@ function LoginPage() {
           >
             Senha
 
-            <input
-              className="h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
-              id="login-password"
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleFieldChange}
-              autoComplete="current-password"
-              required
-            />
+            <div className="relative">
+              <input
+                className="h-11 w-full rounded-lg border border-slate-300 px-3 pr-11 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
+                id="login-password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={handleFieldChange}
+                autoComplete="current-password"
+                required
+              />
+
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-slate-500 hover:text-slate-700"
+                onClick={() => setShowPassword((previous) => !previous)}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} />
+              </button>
+            </div>
           </label>
 
           <button
