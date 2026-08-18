@@ -1,18 +1,16 @@
 from fastapi import APIRouter, Header
 
-from app.dependencies.auth import obter_usuario
+from app.dependencies.auth import get_user
 
 
 router = APIRouter()
 
 
 @router.get("/me")
-def usuario_atual(
-    authorization: str | None = Header(default=None)
-):
-    usuario = obter_usuario(authorization)
+def current_user(authorization: str | None = Header(default=None)):
+    user = get_user(authorization)
 
     return {
-        "id": usuario.id,
-        "email": usuario.email
+        "id": user.id,
+        "email": user.email
     }

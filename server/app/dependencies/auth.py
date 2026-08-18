@@ -4,10 +4,10 @@ from typing import Any
 from fastapi import Header, HTTPException
 from supabase import Client
 
-from app.database import criar_cliente_autenticado, supabase
+from app.database import create_authenticated_client, supabase
 
 
-def obter_token(authorization: str | None):
+def extract_token(authorization: str | None) -> str:
     if not authorization:
         raise HTTPException(
             status_code=401,
@@ -23,34 +23,30 @@ def obter_token(authorization: str | None):
     return authorization.replace("Bearer ", "", 1)
 
 
-def obter_usuario(authorization: str | None):
-    token = obter_token(authorization)
+def get_user(authorization: str | None):
+    token = extract_token(authorization)
+    response = supabase.auth.get_user(token)
 
-    resposta = supabase.auth.get_user(token)
-
-    if resposta.user is None:
+    if response.user is None:
         raise HTTPException(
             status_code=401,
             detail="Usuário não autenticado."
         )
 
-    return resposta.user
+    return response.user
 
 
 @dataclass
-class ClienteAutenticado:
-    cliente: Client
-    usuario: Any
+class AuthenticatedClient:
+    client: Client
+    user: Any
 
 
-def obter_cliente_autenticado(
+def get_authenticated_client(
     authorization: str | None = Header(default=None)
-) -> ClienteAutenticado:
-    token = obter_token(authorization)
-    usuario = obter_usuario(authorization)
-    cliente = criar_cliente_autenticado(token)
+) -> AuthenticatedClient:
+    token = extract_token(authorization)
+    user = get_user(authorization)
+    client = create_authenticated_client(token)
 
-    return ClienteAutenticado(
-        cliente=cliente,
-        usuario=usuario
-    )
+    return AuthenticatedClient(client=client, user=user)

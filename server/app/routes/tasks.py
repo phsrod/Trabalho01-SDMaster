@@ -1,78 +1,76 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies.auth import ClienteAutenticado, obter_cliente_autenticado
-from app.models.task import TarefaAtualizacao, TarefaCriacao
+from app.dependencies.auth import AuthenticatedClient, get_authenticated_client
+from app.models.task import TaskCreate, TaskUpdate
 
 
 router = APIRouter()
 
 
-def montar_dados(tarefa, user_id=None):
-    dados = {
-        "title": tarefa.title,
-        "description": tarefa.description,
-        "due_date": (
-            tarefa.due_date.isoformat()
-            if tarefa.due_date
-            else None
-        ),
-        "priority": tarefa.priority,
-        "status": tarefa.status
+def build_task_data(task, user_id=None):
+    data = {
+        "title": task.title,
+        "description": task.description,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "priority": task.priority,
+        "status": task.status,
     }
 
     if user_id:
-        dados["user_id"] = user_id
+        data["user_id"] = user_id
 
-    return dados
+    return data
 
 
 @router.post("/tasks")
-def criar_tarefa(
-    tarefa: TarefaCriacao,
-    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
+def create_task(
+    task: TaskCreate,
+    auth: AuthenticatedClient = Depends(get_authenticated_client)
 ):
-    resposta = (
-        auth.cliente
+    response = (
+        auth.client
         .table("tasks")
-        .insert(montar_dados(tarefa, auth.usuario.id))
+        .insert(build_task_data(task, auth.user.id))
         .execute()
     )
 
     return {
         "mensagem": "Tarefa criada com sucesso!",
-        "tarefa": resposta.data[0]
+        "tarefa": response.data[0]
     }
 
+
 @router.get("/tasks")
-def listar_tarefas(
-    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
+def list_tasks(
+    auth: AuthenticatedClient = Depends(get_authenticated_client)
 ):
-    resposta = (
-        auth.cliente
+    response = (
+        auth.client
         .table("tasks")
         .select("*")
-        .eq("user_id", auth.usuario.id)
+        .eq("user_id", auth.user.id)
         .execute()
     )
 
-    return resposta.data
+    return response.data
+
 
 @router.put("/tasks/{task_id}")
-def atualizar_tarefa(
+def update_task(
     task_id: str,
-    tarefa: TarefaAtualizacao,
-    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
+    task: TaskUpdate,
+    auth: AuthenticatedClient = Depends(get_authenticated_client)
 ):
-    resposta = (
-        auth.cliente
+    response = (
+        auth.client
         .table("tasks")
-        .update(montar_dados(tarefa))
+        .update(build_task_data(task))
         .eq("id", task_id)
-        .eq("user_id", auth.usuario.id)
+        .eq("user_id", auth.user.id)
         .execute()
     )
 
-    if not resposta.data:
+    if not response.data:
         raise HTTPException(
             status_code=404,
             detail="Tarefa não encontrada."
@@ -80,24 +78,25 @@ def atualizar_tarefa(
 
     return {
         "mensagem": "Tarefa atualizada com sucesso!",
-        "tarefa": resposta.data[0]
+        "tarefa": response.data[0]
     }
 
+
 @router.delete("/tasks/{task_id}")
-def excluir_tarefa(
+def delete_task(
     task_id: str,
-    auth: ClienteAutenticado = Depends(obter_cliente_autenticado)
+    auth: AuthenticatedClient = Depends(get_authenticated_client)
 ):
-    resposta = (
-        auth.cliente
+    response = (
+        auth.client
         .table("tasks")
         .delete()
         .eq("id", task_id)
-        .eq("user_id", auth.usuario.id)
+        .eq("user_id", auth.user.id)
         .execute()
     )
 
-    if not resposta.data:
+    if not response.data:
         raise HTTPException(
             status_code=404,
             detail="Tarefa não encontrada."

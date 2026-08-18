@@ -4,7 +4,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, field_validator
 
 
-class TarefaBase(BaseModel):
+class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
     due_date: date
@@ -13,28 +13,23 @@ class TarefaBase(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def validar_titulo(cls, valor):
-        valor = valor.strip()
-
-        if not valor:
+    def validate_title(cls, value):
+        value = value.strip()
+        if not value:
             raise ValueError("O título não pode ser vazio.")
-
-        return valor
+        return value
 
     @field_validator("due_date")
     @classmethod
-    def validar_data_limite(cls, valor):
-        if valor < date.today():
-            raise ValueError(
-                "A data limite não pode ser anterior ao dia atual."
-            )
-
-        return valor
+    def validate_due_date(cls, value):
+        if value < date.today():
+            raise ValueError("A data limite não pode ser anterior ao dia atual.")
+        return value
 
 
-class TarefaCriacao(TarefaBase):
+class TaskCreate(TaskBase):
     pass
 
 
-class TarefaAtualizacao(TarefaBase):
+class TaskUpdate(TaskBase):
     pass
