@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useTaskContext } from '../context/useTaskContext'
 import Icon from '../components/common/Icon'
+import { inputClass } from '../constants'
 
 function LoginPage() {
   const { activeAccount, loginUser } = useTaskContext()
@@ -9,18 +10,11 @@ function LoginPage() {
 
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState({
-    email: '',
-    password: ''
-  })
+  const [form, setForm] = useState({ email: '', password: '' })
 
   useEffect(() => {
     if (!error) return
-
-    const timer = setTimeout(() => {
-      setError('')
-    }, 10000)
-
+    const timer = setTimeout(() => setError(''), 10000)
     return () => clearTimeout(timer)
   }, [error])
 
@@ -31,10 +25,7 @@ function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault()
 
-    const result = await loginUser(
-      form.email,
-      form.password
-    )
+    const result = await loginUser(form.email, form.password)
 
     if (!result.success) {
       setError(result.message)
@@ -47,11 +38,7 @@ function LoginPage() {
 
   function handleFieldChange(event) {
     const { name, value } = event.target
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value
-    }))
+    setForm((previous) => ({ ...previous, [name]: value }))
   }
 
   return (
@@ -67,10 +54,7 @@ function LoginPage() {
           Task Manager
         </div>
 
-        <h1
-          id="login-title"
-          className="text-center text-2xl font-bold"
-        >
+        <h1 id="login-title" className="text-center text-2xl font-bold">
           Entrar
         </h1>
 
@@ -78,27 +62,17 @@ function LoginPage() {
           Informe seus dados para acessar suas tarefas.
         </p>
 
-        <form
-          className="grid gap-4"
-          onSubmit={handleSubmit}
-        >
+        <form className="grid gap-4" onSubmit={handleSubmit}>
           {error && (
-            <p
-              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-              role="alert"
-            >
+            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
               {error}
             </p>
           )}
 
-          <label
-            className="grid gap-1.5 text-sm font-semibold"
-            htmlFor="login-email"
-          >
+          <label className="grid gap-1.5 text-sm font-semibold" htmlFor="login-email">
             E-mail
-
             <input
-              className="h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
+              className={inputClass}
               id="login-email"
               name="email"
               type="email"
@@ -109,15 +83,11 @@ function LoginPage() {
             />
           </label>
 
-          <label
-            className="grid gap-1.5 text-sm font-semibold"
-            htmlFor="login-password"
-          >
+          <label className="grid gap-1.5 text-sm font-semibold" htmlFor="login-password">
             Senha
-
             <div className="relative">
               <input
-                className="h-11 w-full rounded-lg border border-slate-300 px-3 pr-11 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
+                className={`${inputClass} pr-11`}
                 id="login-password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -126,7 +96,6 @@ function LoginPage() {
                 autoComplete="current-password"
                 required
               />
-
               <button
                 type="button"
                 className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-slate-500 hover:text-slate-700"
@@ -148,10 +117,7 @@ function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-slate-500">
           Não possui uma conta?{' '}
-          <Link
-            className="font-bold text-brand underline"
-            to="/cadastro"
-          >
+          <Link className="font-bold text-brand underline" to="/cadastro">
             Criar conta
           </Link>
         </p>

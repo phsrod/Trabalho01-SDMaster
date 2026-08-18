@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useTaskContext } from '../context/useTaskContext'
 import Icon from '../components/common/Icon'
+import { inputClass } from '../constants'
 
 function RegisterPage() {
   const { activeAccount, registerUser } = useTaskContext()
@@ -9,19 +10,11 @@ function RegisterPage() {
 
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: ''
-  })
+  const [form, setForm] = useState({ name: '', email: '', password: '' })
 
   useEffect(() => {
     if (!error) return
-
-    const timer = setTimeout(() => {
-      setError('')
-    }, 10000)
-
+    const timer = setTimeout(() => setError(''), 10000)
     return () => clearTimeout(timer)
   }, [error])
 
@@ -32,11 +25,7 @@ function RegisterPage() {
   async function handleSubmit(event) {
     event.preventDefault()
 
-    const result = await registerUser(
-      form.name,
-      form.email,
-      form.password
-    )
+    const result = await registerUser(form.name, form.email, form.password)
 
     if (!result.success) {
       setError(result.message)
@@ -48,11 +37,7 @@ function RegisterPage() {
 
   function handleFieldChange(event) {
     const { name, value } = event.target
-
-    setForm((previous) => ({
-      ...previous,
-      [name]: value
-    }))
+    setForm((previous) => ({ ...previous, [name]: value }))
   }
 
   return (
@@ -68,10 +53,7 @@ function RegisterPage() {
           Task Manager
         </div>
 
-        <h1
-          id="register-title"
-          className="text-center text-2xl font-bold"
-        >
+        <h1 id="register-title" className="text-center text-2xl font-bold">
           Criar conta
         </h1>
 
@@ -79,27 +61,17 @@ function RegisterPage() {
           Preencha os dados abaixo para começar.
         </p>
 
-        <form
-          className="grid gap-4"
-          onSubmit={handleSubmit}
-        >
+        <form className="grid gap-4" onSubmit={handleSubmit}>
           {error && (
-            <p
-              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-              role="alert"
-            >
+            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
               {error}
             </p>
           )}
 
-          <label
-            className="grid gap-1.5 text-sm font-semibold"
-            htmlFor="register-name"
-          >
+          <label className="grid gap-1.5 text-sm font-semibold" htmlFor="register-name">
             Nome
-
             <input
-              className="h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
+              className={inputClass}
               id="register-name"
               name="name"
               value={form.name}
@@ -109,14 +81,10 @@ function RegisterPage() {
             />
           </label>
 
-          <label
-            className="grid gap-1.5 text-sm font-semibold"
-            htmlFor="register-email"
-          >
+          <label className="grid gap-1.5 text-sm font-semibold" htmlFor="register-email">
             E-mail
-
             <input
-              className="h-11 rounded-lg border border-slate-300 px-3 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
+              className={inputClass}
               id="register-email"
               name="email"
               type="email"
@@ -127,15 +95,11 @@ function RegisterPage() {
             />
           </label>
 
-          <label
-            className="grid gap-1.5 text-sm font-semibold"
-            htmlFor="register-password"
-          >
+          <label className="grid gap-1.5 text-sm font-semibold" htmlFor="register-password">
             Senha
-
             <div className="relative">
               <input
-                className="h-11 w-full rounded-lg border border-slate-300 px-3 pr-11 outline-none focus:border-brand focus:ring-3 focus:ring-blue-100"
+                className={`${inputClass} pr-11`}
                 id="register-password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
@@ -145,7 +109,6 @@ function RegisterPage() {
                 minLength={6}
                 required
               />
-
               <button
                 type="button"
                 className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-slate-500 hover:text-slate-700"
@@ -155,7 +118,6 @@ function RegisterPage() {
                 <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} />
               </button>
             </div>
-
             <span className="text-xs font-normal text-slate-500">
               Use pelo menos 6 caracteres.
             </span>
@@ -171,10 +133,7 @@ function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-slate-500">
           Já possui uma conta?{' '}
-          <Link
-            className="font-bold text-brand underline"
-            to="/login"
-          >
+          <Link className="font-bold text-brand underline" to="/login">
             Entrar
           </Link>
         </p>

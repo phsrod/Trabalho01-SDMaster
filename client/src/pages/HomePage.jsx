@@ -1,32 +1,16 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import FeedbackAlert from '../components/common/FeedbackAlert'
 import Icon from '../components/common/Icon'
 import { useTaskContext } from '../context/useTaskContext'
-
-const labels = {
-  pendente: 'Pendente',
-  em_andamento: 'Em andamento'
-}
-
-const priorityLabels = {
-  alta: 'Alta',
-  media: 'Média',
-  baixa: 'Baixa'
-}
-
-const priorityStyles = {
-  alta: 'bg-red-50 text-red-700 border border-red-200',
-  media: 'bg-amber-50 text-amber-700 border border-amber-200',
-  baixa: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-}
-
-const statusStyles = {
-  pendente: 'bg-red-50 text-red-700 border border-red-200',
-  em_andamento: 'bg-amber-50 text-amber-700 border border-amber-200',
-  concluida: 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-}
-
-const priorityWeight = { alta: 3, media: 2, baixa: 1 }
+import {
+  priorityLabels,
+  priorityStyles,
+  statusLabels,
+  statusStyles,
+  priorityWeight,
+  defaultBadgeStyle,
+} from '../constants'
 
 function getTaskScore(task) {
   const daysLeft = Math.max(
@@ -34,7 +18,6 @@ function getTaskScore(task) {
     0
   )
   const priority = priorityWeight[task.priority] ?? 1
-  // Mais urgente = mais pontos; prioridade desempata
   return (30 - daysLeft) * 10 + priority
 }
 
@@ -45,25 +28,57 @@ function getGreeting() {
   return 'Boa noite'
 }
 
+function StatCard({ icon, iconBg, label, count, hint }) {
+  return (
+    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <span className={`inline-block rounded-full p-2 ${iconBg}`}>
+        <Icon name={icon} />
+      </span>
+      <p className="mt-3 text-sm font-semibold text-slate-500">{label}</p>
+      <strong className="block text-4xl">{String(count).padStart(2, '0')}</strong>
+      <small className="text-slate-400">{hint}</small>
+    </article>
+  )
+}
+
+function FocusTaskItem({ task }) {
+  return (
+    <div className="border-b p-5 last:border-0">
+      <h3 className="font-bold">{task.title}</h3>
+
+      {task.description && (
+        <p className="mt-1 text-sm text-slate-500">{task.description}</p>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+        <span className={`rounded-full px-2.5 py-0.5 text-xs ${priorityStyles[task.priority] ?? defaultBadgeStyle}`}>
+          {priorityLabels[task.priority]}
+        </span>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs ${statusStyles[task.status] ?? defaultBadgeStyle}`}>
+          {statusLabels[task.status]}
+        </span>
+        <span className="text-slate-400">Data limite: {task.dueDate}</span>
+      </div>
+    </div>
+  )
+}
+
 function HomePage() {
   const { tasks, activeUserName, feedback } = useTaskContext()
 
-  const pending = tasks.filter(
-    (task) => task.status === 'pendente'
-  ).length
+  const stats = useMemo(() => ({
+    pending: tasks.filter((t) => t.status === 'pendente').length,
+    inProgress: tasks.filter((t) => t.status === 'em_andamento').length,
+    completed: tasks.filter((t) => t.status === 'concluida').length,
+  }), [tasks])
 
-  const inProgress = tasks.filter(
-    (task) => task.status === 'em_andamento'
-  ).length
-
-  const completed = tasks.filter(
-    (task) => task.status === 'concluida'
-  ).length
-
-  const focusTasks = tasks
-    .filter((task) => task.status !== 'concluida')
-    .sort((a, b) => getTaskScore(b) - getTaskScore(a))
-    .slice(0, 3)
+  const focusTasks = useMemo(() =>
+    tasks
+      .filter((task) => task.status !== 'concluida')
+      .sort((a, b) => getTaskScore(b) - getTaskScore(a))
+      .slice(0, 3),
+    [tasks]
+  )
 
   return (
     <section className="mx-auto max-w-6xl p-6 md:p-12">
@@ -74,7 +89,6 @@ function HomePage() {
           <p className="mb-2 text-xs font-bold tracking-wider text-slate-400">
             SEU PLANEJAMENTO
           </p>
-
           <h1 className="text-3xl font-bold tracking-tight">
             {getGreeting()}{activeUserName ? `, ${activeUserName}` : ''}.
           </h1>
@@ -90,59 +104,27 @@ function HomePage() {
       </header>
 
       <div className="mb-5 grid gap-4 md:grid-cols-3">
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="inline-block rounded-full bg-red-50 p-2 text-red-700">
-            <Icon name="clock" />
-          </span>
-
-          <p className="mt-3 text-sm font-semibold text-slate-500">
-            Pendentes
-          </p>
-
-          <strong className="block text-4xl">
-            {String(pending).padStart(2, '0')}
-          </strong>
-
-          <small className="text-slate-400">
-            Para organizar hoje
-          </small>
-        </article>
-
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="inline-block rounded-full bg-amber-50 p-2 text-amber-700">
-            <Icon name="spark" />
-          </span>
-
-          <p className="mt-3 text-sm font-semibold text-slate-500">
-            Em andamento
-          </p>
-
-          <strong className="block text-4xl">
-            {String(inProgress).padStart(2, '0')}
-          </strong>
-
-          <small className="text-slate-400">
-            Foco para esta tarde
-          </small>
-        </article>
-
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <span className="inline-block rounded-full bg-emerald-50 p-2 text-emerald-700">
-            <Icon name="check" />
-          </span>
-
-          <p className="mt-3 text-sm font-semibold text-slate-500">
-            Concluídas
-          </p>
-
-          <strong className="block text-4xl">
-            {String(completed).padStart(2, '0')}
-          </strong>
-
-          <small className="text-slate-400">
-            Continue nesse ritmo.
-          </small>
-        </article>
+        <StatCard
+          icon="clock"
+          iconBg="bg-red-50 text-red-700"
+          label="Pendentes"
+          count={stats.pending}
+          hint="Para organizar hoje"
+        />
+        <StatCard
+          icon="spark"
+          iconBg="bg-amber-50 text-amber-700"
+          label="Em andamento"
+          count={stats.inProgress}
+          hint="Foco para esta tarde"
+        />
+        <StatCard
+          icon="check"
+          iconBg="bg-emerald-50 text-emerald-700"
+          label="Concluídas"
+          count={stats.completed}
+          hint="Continue nesse ritmo."
+        />
       </div>
 
       <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -151,7 +133,6 @@ function HomePage() {
             <p className="text-xs font-bold tracking-wider text-slate-400">
               LISTA ATIVA
             </p>
-
             <h2 className="mt-1 text-xl font-bold">
               Tarefas em foco ({focusTasks.length})
             </h2>
@@ -169,34 +150,7 @@ function HomePage() {
         <div>
           {focusTasks.length ? (
             focusTasks.map((task) => (
-              <div
-                className="border-b p-5 last:border-0"
-                key={task.id}
-              >
-                <h3 className="font-bold">
-                  {task.title}
-                </h3>
-
-                {task.description && (
-                  <p className="mt-1 text-sm text-slate-500">
-                    {task.description}
-                  </p>
-                )}
-
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs ${priorityStyles[task.priority] ?? 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
-                    {priorityLabels[task.priority]}
-                  </span>
-
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs ${statusStyles[task.status] ?? 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
-                    {labels[task.status]}
-                  </span>
-
-                  <span className="text-slate-400">
-                    Data limite: {task.dueDate}
-                  </span>
-                </div>
-              </div>
+              <FocusTaskItem key={task.id} task={task} />
             ))
           ) : (
             <p className="p-6 text-slate-500">

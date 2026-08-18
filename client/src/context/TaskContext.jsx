@@ -1,20 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TaskContext } from './taskContext'
 import { supabase } from '../supabaseClient'
 import * as api from '../api'
+import { statusOrder, EMPTY_TASK_FORM } from '../constants'
 
-const STATUS_ORDER = {
-  pendente: 1,
-  em_andamento: 2,
-  concluida: 3,
-}
-
-const EMPTY_TASK_FORM = {
-  title: '',
-  description: '',
-  dueDate: '',
-  priority: 'media',
-  status: 'pendente',
+function sortTasks(tasks) {
+  return [...tasks].sort((a, b) => {
+    const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+    if (statusDiff !== 0) return statusDiff
+    return a.dueDate.localeCompare(b.dueDate)
+  })
 }
 
 function normalizeTask(form) {
@@ -44,6 +39,7 @@ export function TaskProvider({ children }) {
   const [feedback, setFeedback] = useState({ type: '', message: '' })
   const feedbackTimeoutRef = useRef(null)
 
+  // Limpa o timeout do feedback ao desmontar
   useEffect(() => {
     return () => {
       if (feedbackTimeoutRef.current) {
@@ -77,6 +73,7 @@ export function TaskProvider({ children }) {
       name = freshUser?.user?.user_metadata?.name || ''
     }
 
+    // Se não tem nome, usa a parte antes do @ como fallback
     if (!name && email.includes('@')) {
       name = email.split('@')[0]
       await supabase.auth.updateUser({ data: { name } })
@@ -88,27 +85,21 @@ export function TaskProvider({ children }) {
   const refreshTasks = useCallback(async () => {
     try {
       const fetchedTasks = await api.listTasks()
-
-      setTasks([...fetchedTasks].sort((a, b) => {
-        const statusDiff = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
-        if (statusDiff !== 0) return statusDiff
-        return a.dueDate.localeCompare(b.dueDate)
-      }))
+      setTasks(sortTasks(fetchedTasks))
     } catch (error) {
       setMessage('danger', error.message || 'Não foi possível carregar as tarefas.')
     }
   }, [setMessage])
 
+  // Restaura sessão ao carregar
   useEffect(() => {
     async function restoreSession() {
       const { data } = await supabase.auth.getSession()
-
       if (data.session) {
         await applySession(data.session)
         refreshTasks()
       }
     }
-
     restoreSession()
   }, [refreshTasks])
 
@@ -116,6 +107,8 @@ export function TaskProvider({ children }) {
     setTaskForm(EMPTY_TASK_FORM)
     setEditingTaskId(null)
   }
+
+  // ─── Autenticação ──────────────────────────────────────────────
 
   async function loginUser(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -179,11 +172,10 @@ export function TaskProvider({ children }) {
     resetTaskForm()
   }
 
+  // ─── CRUD de tarefas ───────────────────────────────────────────
+
   function updateTaskField(name, value) {
-    setTaskForm((current) => ({
-      ...current,
-      [name]: value,
-    }))
+    setTaskForm((current) => ({ ...current, [name]: value }))
   }
 
   async function submitTask(event) {
@@ -278,7 +270,9 @@ export function TaskProvider({ children }) {
     setMessage('success', 'Edição cancelada.')
   }
 
-  const contextValue = {
+  // ─── Contexto memoizado ────────────────────────────────────────
+
+  const contextValue = useMemo(() => ({
     activeAccount,
     activeUserName,
     tasks,
@@ -294,7 +288,23 @@ export function TaskProvider({ children }) {
     deleteTask,
     toggleTaskStatus,
     cancelTaskEditing,
-  }
+  }), [
+    activeAccount,
+    activeUserName,
+    tasks,
+    taskForm,
+    editingTaskId,
+    feedback,
+    loginUser,
+    registerUser,
+    logoutAccount,
+    updateTaskField,
+    submitTask,
+    startTaskEdit,
+    deleteTask,
+    toggleTaskStatus,
+    cancelTaskEditing,
+  ])
 
   return <TaskContext.Provider value={contextValue}>{children}</TaskContext.Provider>
 }

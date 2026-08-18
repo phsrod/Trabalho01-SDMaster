@@ -1,30 +1,12 @@
 import { supabase } from './supabaseClient'
+import {
+  priorityToLabel,
+  labelToPriority,
+  statusToLabel,
+  labelToStatus,
+} from './constants'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-
-const STATUS_LABELS = {
-  pendente: 'Pendente',
-  em_andamento: 'Em andamento',
-  concluida: 'Concluída',
-}
-
-const PRIORITY_LABELS = {
-  baixa: 'Baixa',
-  media: 'Média',
-  alta: 'Alta',
-}
-
-const LABEL_TO_STATUS = {
-  Pendente: 'pendente',
-  'Em andamento': 'em_andamento',
-  'Concluída': 'concluida',
-}
-
-const LABEL_TO_PRIORITY = {
-  Baixa: 'baixa',
-  'Média': 'media',
-  Alta: 'alta',
-}
 
 async function getAccessToken() {
   const { data } = await supabase.auth.getSession()
@@ -36,8 +18,8 @@ function toApiTask(task) {
     title: task.title,
     description: task.description,
     due_date: task.dueDate,
-    priority: PRIORITY_LABELS[task.priority] || task.priority,
-    status: STATUS_LABELS[task.status] || task.status,
+    priority: priorityToLabel[task.priority] || task.priority,
+    status: statusToLabel[task.status] || task.status,
   }
 }
 
@@ -47,12 +29,12 @@ function fromApiTask(task) {
     title: task.title,
     description: task.description || '',
     dueDate: task.due_date,
-    priority: LABEL_TO_PRIORITY[task.priority] || task.priority,
-    status: LABEL_TO_STATUS[task.status] || task.status,
+    priority: labelToPriority[task.priority] || task.priority,
+    status: labelToStatus[task.status] || task.status,
   }
 }
 
-function errorMessage(payload, fallback) {
+function extractErrorMessage(payload, fallback) {
   if (!payload) return fallback
   if (typeof payload.detail === 'string') return payload.detail
   if (Array.isArray(payload.detail)) {
@@ -71,7 +53,7 @@ async function request(path, options = {}) {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        ...(options.headers || {}),
+        ...options.headers,
       },
     })
   } catch {
@@ -83,14 +65,12 @@ async function request(path, options = {}) {
     try {
       payload = await response.json()
     } catch {
-      // corpo sem JSON (ex.: erro de rede/proxy)
+      // Resposta sem JSON válido (ex.: erro de rede/proxy)
     }
-    throw new Error(errorMessage(payload, `Erro ${response.status} ao acessar o servidor.`))
+    throw new Error(extractErrorMessage(payload, `Erro ${response.status} ao acessar o servidor.`))
   }
 
-  if (response.status === 204) {
-    return null
-  }
+  if (response.status === 204) return null
 
   return response.json()
 }
@@ -117,7 +97,5 @@ export async function updateTask(taskId, task) {
 }
 
 export async function deleteTask(taskId) {
-  await request(`/tasks/${taskId}`, {
-    method: 'DELETE',
-  })
+  await request(`/tasks/${taskId}`, { method: 'DELETE' })
 }

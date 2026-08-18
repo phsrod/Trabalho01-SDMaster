@@ -3,23 +3,18 @@ import Icon from '../common/Icon'
 import { useTaskContext } from '../../context/useTaskContext'
 
 const menuItems = [
-  {
-    to: '/',
-    label: 'Principal',
-    icon: 'home',
-    end: true
-  },
-  {
-    to: '/tarefas',
-    label: 'Minhas tarefas',
-    icon: 'search'
-  },
-  {
-    to: '/criar-tarefa',
-    label: 'Criar tarefa',
-    icon: 'plus'
-  }
+  { to: '/', label: 'Principal', icon: 'home', end: true },
+  { to: '/tarefas', label: 'Minhas tarefas', icon: 'search' },
+  { to: '/criar-tarefa', label: 'Criar tarefa', icon: 'plus' },
 ]
+
+const navLinkClass = ({ isActive }) =>
+  `flex h-9 w-9 shrink-0 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:w-auto sm:px-3 md:w-full ${
+    isActive ? 'bg-blue-50 shadow-sm' : 'hover:bg-blue-50'
+  }`
+
+const dangerButtonClass =
+  'flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700'
 
 function MainLayout() {
   const { activeAccount, activeUserName, logoutAccount } = useTaskContext()
@@ -33,6 +28,7 @@ function MainLayout() {
   return (
     <div className="grid min-h-screen md:grid-cols-[242px_minmax(0,1fr)]">
       <aside className="flex gap-3 border-b border-slate-200 bg-white p-4 md:sticky md:top-0 md:h-screen md:flex-col md:gap-0 md:border-b-0 md:border-r">
+        {/* Logo */}
         <NavLink
           to="/"
           className="flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-2 text-xl font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
@@ -42,10 +38,10 @@ function MainLayout() {
           <span className="grid size-8 place-items-center rounded-lg bg-brand text-white">
             T
           </span>
-
           <span className="hidden md:inline">Task Manager</span>
         </NavLink>
 
+        {/* Menu de navegação */}
         <nav
           className="flex flex-1 gap-1 overflow-x-auto md:mt-10 md:grid md:auto-rows-min md:content-start md:gap-1"
           aria-label="Navegação principal"
@@ -61,13 +57,7 @@ function MainLayout() {
               end={end}
               aria-label={label}
               title={label}
-              className={({ isActive }) =>
-                `flex h-9 w-9 shrink-0 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:w-auto sm:px-3 md:w-full ${
-                  isActive
-                    ? 'bg-blue-50 shadow-sm'
-                    : 'hover:bg-blue-50'
-                }`
-              }
+              className={navLinkClass}
             >
               <span className="text-brand">
                 <Icon name={icon} />
@@ -77,6 +67,7 @@ function MainLayout() {
           ))}
         </nav>
 
+        {/* Botão de sair (mobile) */}
         <button
           type="button"
           className="grid size-11 shrink-0 place-items-center rounded-lg border border-red-200 text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 md:hidden"
@@ -87,6 +78,7 @@ function MainLayout() {
           <Icon name="logout" />
         </button>
 
+        {/* Perfil do usuário (desktop) */}
         <section
           className="mt-auto hidden border-t border-slate-200 px-2 pt-4 md:block"
           aria-label="Meu espaço"
@@ -98,11 +90,8 @@ function MainLayout() {
 
             <div className="text-xs">
               {activeUserName && (
-                <strong className="block">
-                  {activeUserName}
-                </strong>
+                <strong className="block">{activeUserName}</strong>
               )}
-
               <span className="text-slate-500">
                 {activeAccount || 'Sessão encerrada'}
               </span>
@@ -111,7 +100,7 @@ function MainLayout() {
 
           <button
             type="button"
-            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+            className={`mt-3 w-full ${dangerButtonClass}`}
             onClick={handleLogout}
           >
             <Icon name="logout" size={16} />
