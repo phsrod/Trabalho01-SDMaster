@@ -27,7 +27,7 @@ const menuItems = [
 ]
 
 function MainLayout() {
-  const { activeAccount, logoutAccount } = useTaskContext()
+  const { activeAccount, activeUserName, logoutAccount } = useTaskContext()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -102,6 +102,12 @@ function MainLayout() {
             </div>
 
             <div className="text-xs">
+              {activeUserName && (
+                <strong className="block">
+                  {activeUserName}
+                </strong>
+              )}
+
               <span className="text-slate-500">
                 {activeAccount || 'Sessão encerrada'}
               </span>

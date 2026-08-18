@@ -65,11 +65,25 @@ export function TaskProvider({ children }) {
     }, 10000)
   }, [])
 
-  function applySession(session) {
+  async function applySession(session) {
     if (!session?.user) return
 
-    setActiveAccount(session.user.email || session.user.id)
-    setActiveUserName(session.user.user_metadata?.name || '')
+    const email = session.user.email || session.user.id
+    setActiveAccount(email)
+
+    let name = session.user.user_metadata?.name || ''
+
+    if (!name) {
+      const { data: freshUser } = await supabase.auth.getUser()
+      name = freshUser?.user?.user_metadata?.name || ''
+    }
+
+    if (!name && email.includes('@')) {
+      name = email.split('@')[0]
+      await supabase.auth.updateUser({ data: { name } })
+    }
+
+    setActiveUserName(name)
   }
 
   const refreshTasks = useCallback(async () => {
@@ -91,7 +105,7 @@ export function TaskProvider({ children }) {
       const { data } = await supabase.auth.getSession()
 
       if (data.session) {
-        applySession(data.session)
+        await applySession(data.session)
         refreshTasks()
       }
     }
@@ -114,7 +128,7 @@ export function TaskProvider({ children }) {
       return { success: false, message: 'E-mail ou senha inválidos.' }
     }
 
-    applySession(data.session)
+    await applySession(data.session)
     await refreshTasks()
     return { success: true }
   }
@@ -153,7 +167,7 @@ export function TaskProvider({ children }) {
       }
     }
 
-    applySession(data.session)
+    await applySession(data.session)
     await refreshTasks()
     return { success: true }
   }
