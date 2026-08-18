@@ -9,7 +9,7 @@ function CreateTaskPage() {
     <section className="mx-auto max-w-3xl p-6 md:p-12">
       <header className="mb-7">
         <p className="mb-2 text-xs font-bold tracking-wider text-slate-400">
-          NOVA TAREFA
+          {editingTaskId ? 'EDITAR TAREFA' : 'NOVA TAREFA'}
         </p>
 
         <h1 className="text-3xl font-bold tracking-tight">
@@ -17,7 +17,7 @@ function CreateTaskPage() {
         </h1>
 
         <p className="mt-2 text-slate-500">
-          Adicione os detalhes para manter seu trabalho organizado.
+          {editingTaskId ? 'Atualize os dados desta tarefa.' : 'Adicione os detalhes para manter seu trabalho organizado.'}
         </p>
       </header>
 

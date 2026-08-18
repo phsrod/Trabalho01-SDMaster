@@ -20,7 +20,7 @@ const EMPTY_TASK_FORM = {
 function normalizeTask(form) {
   return {
     title: form.title.trim(),
-    description: form.description.trim(),
+    description: form.description.trim() || null,
     dueDate: form.dueDate,
     priority: form.priority,
     status: form.status,
@@ -29,7 +29,6 @@ function normalizeTask(form) {
 
 function validateTaskForm(form) {
   if (!form.title.trim()) return 'Informe o título da tarefa.'
-  if (!form.description.trim()) return 'Informe a descrição da tarefa.'
   if (!form.dueDate) return 'Informe a data limite da tarefa.'
   if (!form.priority) return 'Informe a prioridade da tarefa.'
   if (!form.status) return 'Informe o status da tarefa.'

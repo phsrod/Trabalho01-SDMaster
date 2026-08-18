@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import FeedbackAlert from '../components/common/FeedbackAlert'
 import Icon from '../components/common/Icon'
 import { useTaskContext } from '../context/useTaskContext'
 
@@ -45,7 +46,7 @@ function getGreeting() {
 }
 
 function HomePage() {
-  const { tasks, activeUserName } = useTaskContext()
+  const { tasks, activeUserName, feedback } = useTaskContext()
 
   const pending = tasks.filter(
     (task) => task.status === 'pendente'
@@ -66,6 +67,8 @@ function HomePage() {
 
   return (
     <section className="mx-auto max-w-6xl p-6 md:p-12">
+      <FeedbackAlert feedback={feedback} />
+
       <header className="mb-9 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-bold tracking-wider text-slate-400">
@@ -174,9 +177,11 @@ function HomePage() {
                   {task.title}
                 </h3>
 
-                <p className="mt-1 text-sm text-slate-500">
-                  {task.description}
-                </p>
+                {task.description && (
+                  <p className="mt-1 text-sm text-slate-500">
+                    {task.description}
+                  </p>
+                )}
 
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs ${priorityStyles[task.priority] ?? 'bg-slate-100 text-slate-600 border border-slate-200'}`}>

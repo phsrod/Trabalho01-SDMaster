@@ -1,6 +1,9 @@
+import { useNavigate } from 'react-router-dom'
 import { useTaskContext } from '../../context/useTaskContext'
 
 function TaskForm() {
+  const navigate = useNavigate()
+
   const {
     activeAccount,
     taskForm,
@@ -53,7 +56,6 @@ function TaskForm() {
               value={taskForm.description}
               onChange={(event) => updateTaskField(event.target.name, event.target.value)}
               maxLength={500}
-              required
             />
           </div>
 
@@ -113,7 +115,7 @@ function TaskForm() {
             </button>
 
             {editingTaskId && (
-              <button type="button" className="h-11 rounded-lg border border-slate-300 px-4 font-bold" onClick={cancelTaskEditing}>
+              <button type="button" className="h-11 rounded-lg border border-slate-300 px-4 font-bold" onClick={() => { cancelTaskEditing(); navigate('/'); }}>
                 Cancelar
               </button>
             )}

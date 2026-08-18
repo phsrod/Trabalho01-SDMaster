@@ -6,7 +6,6 @@ import NotFoundPage from '../pages/NotFoundPage'
 import TasksPage from '../pages/TasksPage'
 import HomePage from '../pages/HomePage'
 import CreateTaskPage from '../pages/CreateTaskPage'
-import SearchTaskPage from '../pages/SearchTaskPage'
 import ProtectedLayout from './ProtectedLayout'
 
 function AppRouter() {
@@ -17,7 +16,6 @@ function AppRouter() {
       <Route index element={<HomePage />} />
       <Route path="tarefas" element={<TasksPage />} />
       <Route path="criar-tarefa" element={<CreateTaskPage />} />
-      <Route path="buscar" element={<SearchTaskPage />} />
     </Route>
     <Route path="*" element={<NotFoundPage />} />
   </Routes></TaskProvider></BrowserRouter>

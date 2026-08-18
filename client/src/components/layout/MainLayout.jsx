@@ -12,17 +12,12 @@ const menuItems = [
   {
     to: '/tarefas',
     label: 'Minhas tarefas',
-    icon: 'tasks'
+    icon: 'search'
   },
   {
     to: '/criar-tarefa',
     label: 'Criar tarefa',
     icon: 'plus'
-  },
-  {
-    to: '/buscar',
-    label: 'Buscar uma tarefa',
-    icon: 'search'
   }
 ]
 
