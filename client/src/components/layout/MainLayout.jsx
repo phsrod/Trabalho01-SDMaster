@@ -98,18 +98,12 @@ function MainLayout() {
         >
           <div className="flex items-center gap-2">
             <div className="grid size-8 place-items-center rounded-full bg-violet-100 font-bold text-violet-700">
-              L
+              {activeAccount ? activeAccount.charAt(0).toUpperCase() : '?'}
             </div>
 
             <div className="text-xs">
-              <strong className="block">
-                Meu espaço
-              </strong>
-
               <span className="text-slate-500">
-                {activeAccount
-                  ? 'Conta pessoal'
-                  : 'Sessão encerrada'}
+                {activeAccount || 'Sessão encerrada'}
               </span>
             </div>
           </div>
