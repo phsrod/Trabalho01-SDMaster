@@ -57,8 +57,7 @@ def test_listar_tarefas(monkeypatch):
     ]
 
     class ClienteSupabaseFake:
-        campo_filtro = None
-        valor_filtro = None
+        filtro = None
 
         def table(self, nome_tabela):
             assert nome_tabela == "tasks"
@@ -71,14 +70,14 @@ def test_listar_tarefas(monkeypatch):
         def eq(self, campo, valor):
             assert campo == "user_id"
             assert valor == "usuario-teste-id"
-            self.campo_filtro = campo
-            self.valor_filtro = valor
+            self.filtro = (campo, valor)
             return self
 
         def execute(self):
             tarefas_filtradas = [
-                tarefa for tarefa in tarefas
-                if tarefa[self.campo_filtro] == self.valor_filtro
+                tarefa
+                for tarefa in tarefas
+                if tarefa["user_id"] == self.filtro[1]
             ]
             return SimpleNamespace(data=tarefas_filtradas)
 
@@ -97,8 +96,8 @@ def test_listar_tarefas(monkeypatch):
     response = client.get("/tasks")
 
     assert response.status_code == 200
-    assert response.json() == tarefas[:3]
-    assert all(
-        tarefa["user_id"] == usuario.id
-        for tarefa in response.json()
-    )
+    assert response.json() == [
+        tarefa
+        for tarefa in tarefas
+        if tarefa["user_id"] == usuario.id
+    ]
