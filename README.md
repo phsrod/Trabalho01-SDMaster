@@ -1,6 +1,6 @@
 # 📋 Gerenciador de Tarefas — Trabalho 01 (SD)
 
-Sistema de gerenciamento de tarefas com autenticação, permitindo criar, listar, editar e excluir tarefas de forma organizada. Desenvolvido como projeto acadêmico da disciplina de Software Distribuído.
+Sistema de gerenciamento de tarefas com autenticação, permitindo criar, listar, editar e excluir tarefas de forma organizada. Desenvolvido como projeto acadêmico da disciplina de Sistemas Distribuídos.
 
 ![React](https://img.shields.io/badge/React-19.2.8-61DAFB?logo=react&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-8.2.1-646CFF?logo=vite&logoColor=white) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.3.3-06B6D4?logo=tailwindcss&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.13+-3776AB?logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-0.141.1-009688?logo=fastapi&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-2.31-3FCF8E?logo=supabase&logoColor=white) ![pytest](https://img.shields.io/badge/pytest-9.1.1-0A9EDC?logo=pytest&logoColor=white)
 
@@ -17,8 +17,8 @@ Sistema de gerenciamento de tarefas com autenticação, permitindo criar, listar
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/phsrod/Trabalho01-SD.git
-cd Trabalho01-SD
+git clone https://github.com/phsrod/Trabalho01-SDMaster.git
+cd Trabalho01-SDMaster
 ```
 
 ### 2. Configurar variáveis de ambiente
