@@ -6,6 +6,17 @@ Sistema de gerenciamento de tarefas com autenticação, permitindo criar, listar
 
 ---
 
+## Sumário
+
+- [Instruções de Instalação e Execução](#instruções-de-instalação-e-execução)
+- [Prints da Interface](#prints-da-interface)
+- [Estrutura do Código](#estrutura-do-código)
+- [Arquitetura do Projeto](#arquitetura-do-projeto)
+- [Testes](#testes)
+- [Licença](#licença)
+
+---
+
 ## Instruções de Instalação e Execução
 
 ### Pré-requisitos
@@ -74,14 +85,30 @@ Acesse [http://localhost:5173](http://localhost:5173) no navegador.
 
 ## Prints da Interface
 
-> **TODO:** Adicionar prints das principais telas da aplicação.
->
-> - [ ] Tela de Login
-> - [ ] Tela de Cadastro
-> - [ ] Página Inicial (Home)
-> - [ ] Lista de Tarefas
-> - [ ] Formulário de Criação de Tarefa
-> - [ ] Tela de Erro (404)
+### Login
+
+![Tela de Login](.github/screenshots/login.png)
+
+### Cadastro
+
+![Tela de Cadastro](.github/screenshots/cadastro.png)
+
+### Página Inicial
+
+![Página Inicial](.github/screenshots/home.png)
+
+### Lista de Tarefas
+
+![Lista de Tarefas](.github/screenshots/tarefas.png)
+
+### Criar Tarefa
+
+![Formulário de Tarefa](.github/screenshots/criar_tarefa.png)
+
+### Editar Tarefa
+
+![Formulário de Tarefa](.github/screenshots/editar_tarefa.png)
+
 
 ---
 
@@ -89,26 +116,38 @@ Acesse [http://localhost:5173](http://localhost:5173) no navegador.
 
 ```
 .
-├── .env.example              # Template de variáveis de ambiente
+├── .env                        # Variáveis de ambiente (não versionado)
+├── .env.example                # Template de variáveis de ambiente
 ├── .gitignore
 ├── LICENSE
 ├── README.md
 │
-├── client/                   # ── Frontend (React + Vite) ──────────────
+├── .github/
+│   └── screenshots/            # Prints das interfaces
+│       ├── login.png
+│       ├── cadastro.png
+│       ├── home.png
+│       ├── tarefas.png
+│       ├── criar_tarefa.png
+│       └── editar_tarefa.png
+│
+├── client/                     # ── Frontend (React + Vite) ────────────
 │   ├── index.html
 │   ├── package.json
+│   ├── package-lock.json
 │   ├── vite.config.js
 │   ├── eslint.config.js
+│   ├── public/
 │   └── src/
 │       ├── main.jsx              # Entry point
 │       ├── App.jsx               # Componente raiz
-│       ├── api.js                # Configuração de chamadas à API
+│       ├── api.js                # Chamadas HTTP ao backend
 │       ├── supabaseClient.js     # Cliente Supabase (front)
 │       ├── constants.js          # Labels, estilos e mapeamentos
 │       ├── index.css             # Estilos globais (Tailwind)
 │       ├── router/
 │       │   ├── AppRouter.jsx     # Rotas da aplicação
-│       │   └── ProtectedLayout.jsx  # Layout autenticado
+│       │   └── ProtectedLayout.jsx  # Guard de autenticação
 │       ├── pages/
 │       │   ├── LoginPage.jsx
 │       │   ├── RegisterPage.jsx
@@ -118,28 +157,39 @@ Acesse [http://localhost:5173](http://localhost:5173) no navegador.
 │       │   └── NotFoundPage.jsx
 │       ├── components/
 │       │   ├── common/           # Componentes reutilizáveis
+│       │   │   ├── FeedbackAlert.jsx
+│       │   │   └── Icon.jsx
 │       │   ├── layout/           # Layouts de página
+│       │   │   └── MainLayout.jsx
 │       │   └── tasks/            # Componentes de tarefas
 │       │       ├── TaskForm.jsx
 │       │       └── TaskList.jsx
 │       └── context/
-│           ├── TaskContext.jsx   # Context global de tarefas
-│           ├── taskContext.js
-│           └── useTaskContext.js
+│           ├── TaskContext.jsx   # Provider global de tarefas
+│           ├── taskContext.js    # Criação do Context
+│           └── useTaskContext.js # Hook de acesso ao contexto
 │
-└── server/                   # ── Backend (FastAPI) ───────────────────
+└── server/                     # ── Backend (FastAPI) ─────────────────
     ├── main.py                   # Entrada do servidor
     ├── requirements.txt
-    └── app/
-        ├── config.py             # Leitura de variáveis de ambiente
-        ├── database.py           # Cliente Supabase (server)
-        ├── models/
-        │   └── task.py           # Pydantic models (TaskCreate, TaskUpdate)
-        ├── routes/
-        │   ├── auth.py           # GET /me
-        │   └── tasks.py          # CRUD /tasks
-        └── dependencies/
-            └── auth.py           # Autenticação via Bearer token
+    ├── app/
+    │   ├── config.py             # Leitura de variáveis de ambiente
+    │   ├── database.py           # Cliente Supabase (server)
+    │   ├── models/
+    │   │   └── task.py           # Pydantic models (TaskCreate, TaskUpdate)
+    │   ├── routes/
+    │   │   ├── auth.py           # GET /me
+    │   │   └── tasks.py          # CRUD /tasks
+    │   └── dependencies/
+    │       └── auth.py           # Autenticação via Bearer token
+    └── tests/
+        ├── configtest.py         # Configuração de fixtures dos testes
+        ├── test_auth.py          # Testes de autenticação
+        ├── test_post.py          # Testes de criação de tarefa
+        ├── test_get.py           # Testes de listagem de tarefas
+        ├── test_put.py           # Testes de atualização de tarefa
+        ├── test_delete.py        # Testes de exclusão de tarefa
+        └── test_main.py          # Testes do endpoint principal
 ```
 
 ---
@@ -245,13 +295,22 @@ O sistema segue uma arquitetura **client-server** com separação clara de respo
 4. **CRUD de tarefas:** O backend opera diretamente no banco PostgreSQL via SDK do Supabase, filtrando por `user_id` para isolar dados entre usuários.
 5. **Resposta ao frontend:** Os dados são transformados (`toApiTask` / `fromApiTask`) para alinhar nomenclatura (snake_case ↔ camelCase) entre backend e frontend.
 
+### Características da Arquitetura
+
+| Item | Pergunta | Resposta |
+|------|----------|----------|
+| **Componentes** | Quais partes independentes existem? | Três componentes principais: o **frontend** (React + Vite), o **backend** (FastAPI) e o **banco de dados** (Supabase/PostgreSQL). Cada um pode ser desenvolvido e executado de forma independente. |
+| **Compartilhamento** | O que é compartilhado? | O **banco de dados** é compartilhado entre backend e Supabase Auth. O **token JWT** é compartilhado entre frontend e backend para autenticação. As **constantes** de labels e estilos são compartilhadas internamente no frontend via `constants.js`. |
+| **Tipo de SO** | Computação, informação, permissiva ou combinação? | **Combinação**: o sistema é **computacional** (processa dados e executa CRUD), **informacional** (armazena e recupera tarefas) e **permissivo** (controle de acesso por role via autenticação JWT — cada usuário só acessa suas próprias tarefas). |
+| **Transparência** | O que o usuário não precisa perceber? | O usuário não percebe a **comunicação HTTP** entre frontend e backend, a **validação do token JWT**, a **transformação de dados** (snake_case ↔ camelCase) entre as camadas, nem o **banco de dados** subjacente. Tudo parece uma aplicação local e contínua. |
+| **Escalabilidade** | Como cresce? | O frontend pode escalar via **CDN** (build estático). O backend pode escalar com **múltiplas instâncias** (FastAPI é assíncrono e stateless). O banco escala horizontalmente pelo **Supabase** (PostgreSQL gerenciado). A separação client-server permite escalar cada camada independentemente. |
+| **Falha** | O que acontece se um componente parar? | Se o **frontend** parar, o usuário não consegue acessar a interface, mas os dados permanecem seguros no banco. Se o **backend** parar, as operações CRUD falham, mas o frontend exibe mensagens de erro ao usuário. Se o **Supabase** cair, toda a aplicação fica indisponível, pois tanto a autenticação quanto o banco dependem dele. |
+
 ---
 
 ## Testes
 
 ### Como Instalar as Dependências de Testes
-
-> **TODO:** Confirmar e documentar a instalação completa.
 
 ```bash
 cd server
