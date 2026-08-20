@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi.testclient import TestClient
 from main import app
-from app.dependencies.auth import ClienteAutenticado, obter_cliente_autenticado
+from app.dependencies.auth import AuthenticatedClient, get_authenticated_client
 
 client = TestClient(app)
 
@@ -82,14 +82,14 @@ def test_listar_tarefas(monkeypatch):
             return SimpleNamespace(data=tarefas_filtradas)
 
     def obter_cliente_fake():
-        return ClienteAutenticado(
-            cliente=ClienteSupabaseFake(),
-            usuario=usuario
+        return AuthenticatedClient(
+            client=ClienteSupabaseFake(),
+            user=usuario
         )
 
     monkeypatch.setitem(
         app.dependency_overrides,
-        obter_cliente_autenticado,
+        get_authenticated_client,
         obter_cliente_fake
     )
 
