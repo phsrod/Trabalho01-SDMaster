@@ -256,11 +256,18 @@ export function TaskProvider({ children }) {
     if (!task) return
 
     const nextStatus = task.status === 'concluida' ? 'pendente' : 'concluida'
+    const updatedTask = { ...task, status: nextStatus }
+
+    setTasks((currentTasks) => sortTasks(
+      currentTasks.map((item) => item.id === taskId ? updatedTask : item)
+    ))
 
     try {
-      await api.updateTask(taskId, { ...task, status: nextStatus })
-      await refreshTasks()
+      await api.updateTask(taskId, updatedTask)
     } catch (error) {
+      setTasks((currentTasks) => sortTasks(
+        currentTasks.map((item) => item.id === taskId ? task : item)
+      ))
       setMessage('danger', error.message || 'Não foi possível atualizar a tarefa.')
     }
   }
