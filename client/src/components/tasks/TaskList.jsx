@@ -46,7 +46,7 @@ function TaskItem({ task }) {
         <div className="flex flex-wrap justify-between gap-2">
           <h3 className="font-bold">{task.title}</h3>
           <time className="text-xs text-slate-400" dateTime={task.dueDate}>
-            Data limite: {task.dueDate}
+            Data limite: {task.dueDate.split('-').reverse().join('/')}
           </time>
         </div>
 
@@ -72,7 +72,7 @@ function TaskItem({ task }) {
           className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
           onClick={() => {
             startTaskEdit(task.id)
-            navigate('/criar-tarefa')
+            requestAnimationFrame(() => navigate('/criar-tarefa'))
           }}
         >
           Editar

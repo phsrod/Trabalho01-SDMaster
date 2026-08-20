@@ -57,7 +57,7 @@ function FocusTaskItem({ task }) {
         <span className={`rounded-full px-2.5 py-0.5 text-xs ${statusStyles[task.status] ?? defaultBadgeStyle}`}>
           {statusLabels[task.status]}
         </span>
-        <span className="text-slate-400">Data limite: {task.dueDate}</span>
+        <span className="text-slate-400">Data limite: {task.dueDate.split('-').reverse().join('/')}</span>
       </div>
     </div>
   )

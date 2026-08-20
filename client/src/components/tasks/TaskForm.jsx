@@ -25,7 +25,7 @@ function TaskForm() {
           {editingTaskId ? 'Editar tarefa' : 'Adicionar tarefa'}
         </h2>
 
-        <form className="grid gap-4" onSubmit={submitTask}>
+        <form className="grid gap-4" onSubmit={async (e) => { const wasEditing = !!editingTaskId; await submitTask(e); if (wasEditing) navigate('/'); }}>
           <div>
             <label className={labelClass} htmlFor="title">
               Título da tarefa
@@ -117,7 +117,7 @@ function TaskForm() {
               className="h-11 flex-1 rounded-lg bg-brand px-4 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={!activeAccount}
             >
-              {editingTaskId ? 'Salvar' : 'Adicionar'}
+              {editingTaskId ? 'Salvar alteração' : 'Adicionar'}
             </button>
 
             {editingTaskId && (
