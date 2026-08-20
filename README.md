@@ -1,4 +1,4 @@
-# 📋 Gerenciador de Tarefas — Trabalho 01 (SD)
+# Gerenciador de Tarefas — Trabalho 01 (SD)
 
 Sistema de gerenciamento de tarefas com autenticação, permitindo criar, listar, editar e excluir tarefas de forma organizada. Desenvolvido como projeto acadêmico da disciplina de Sistemas Distribuídos.
 
@@ -6,7 +6,7 @@ Sistema de gerenciamento de tarefas com autenticação, permitindo criar, listar
 
 ---
 
-## 📦 Instruções de Instalação e Execução
+## Instruções de Instalação e Execução
 
 ### Pré-requisitos
 
@@ -72,7 +72,7 @@ Acesse [http://localhost:5173](http://localhost:5173) no navegador.
 
 ---
 
-## 🖼️ Prints da Interface
+## Prints da Interface
 
 > **TODO:** Adicionar prints das principais telas da aplicação.
 >
@@ -85,7 +85,7 @@ Acesse [http://localhost:5173](http://localhost:5173) no navegador.
 
 ---
 
-## 🗂️ Estrutura do Código
+## Estrutura do Código
 
 ```
 .
@@ -144,7 +144,110 @@ Acesse [http://localhost:5173](http://localhost:5173) no navegador.
 
 ---
 
-## 🧪 Testes
+## Arquitetura do Projeto
+
+O sistema segue uma arquitetura **client-server** com separação clara de responsabilidades. O frontend (React) é responsável pela interface do usuário e pelo estado da aplicação, enquanto o backend (FastAPI) processa as regras de negócio, valida dados e se comunica com o banco de dados.
+
+### Visão Geral
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          USUÁRIO                                    │
+│                     (Navegador Web)                                 │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+                           ▼
+┌───────────────────────────────────────────────────────────────────┐
+│                       FRONTEND                                    │
+│                React + Vite + Tailwind CSS                        │
+│                                                                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────────────────┐   │
+│  │   Páginas   │  │ Componentes │  │     Context API          │   │
+│  │  (Router)   │──│  (UI)       │──│  (TaskContext)           │   │
+│  └─────────────┘  └─────────────┘  └──────────────────────────┘   │
+│         │                                │                        │
+│         ▼                                ▼                        │
+│  ┌─────────────┐                 ┌─────────────────┐              │
+│  │   api.js    │                 │ supabaseClient  │              │
+│  │ (HTTP calls)│                 │ (Auth SDK)      │              │
+│  └──────┬──────┘                 └────────┬────────┘              │
+└─────────┼─────────────────────────────────┼───────────────────────┘
+          │  Bearer Token (JWT)             │  Supabase Auth (SDK)
+          ▼                                 ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                        BACKEND                                     │
+│                     FastAPI (Python)                               │
+│                                                                    │
+│  ┌─────────────┐  ┌──────────────────┐  ┌──────────────────┐       │
+│  │   Routes    │  │  Dependencies    │  │     Models       │       │
+│  │ /tasks, /me │──│  auth.py         │──│  Pydantic        │       │
+│  └─────────────┘  │  (validação JWT) │  │  (validação)     │       │
+│                   └────────┬─────────┘  └──────────────────┘       │
+│                            │                                       │
+│                   ┌────────▼─────────┐                             │
+│                   │    database.py   │                             │
+│                   │  (Supabase SDK)  │                             │
+│                   └────────┬─────────┘                             │
+└────────────────────────────┼───────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       BANCO DE DADOS                                │
+│                    Supabase (PostgreSQL)                            │
+│                                                                     │
+│  ┌─────────────────────┐   ┌─────────────────────┐                  │
+│  │     users           │   │      tasks          │                  │
+│  │  (Supabase Auth)    │   │  (dados das tarefas)│                  │
+│  └─────────────────────┘   └─────────────────────┘                  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Fluxo de Autenticação
+
+```
+┌──────────┐    1. Login/Registro    ┌───────────────┐    2. Token JWT   ┌────────┐
+│ Frontend │ ──────────────────────▶│  Supabase     │ ────────────────▶ │  User  │
+│ (React)  │ ◀──────────────────────│  Auth (SDK)   │ ◀──────────────── │        │
+└─────┬────┘    3. access_token      └───────────────┘                   └────────┘
+      │
+      │  4. Requisições HTTP
+      │     Authorization: Bearer <token>
+      ▼
+┌──────────────┐   5. Valida token    ┌───────────────┐   6. Query DB  ┌────────┐
+│   Backend    │ ──────────────────▶ │  Supabase      │ ─────────────▶│Tasks DB│
+│  (FastAPI)   │ ◀────────────────── │  (SDK auth)    │ ◀─────────────│        │
+└──────────────┘   7. Dados retornados└───────────────┘                └────────┘
+```
+
+### Componentes Principais
+
+| Camada | Componente | Responsabilidade |
+|--------|-----------|-------------------|
+| **Frontend** | `AppRouter` | Rotas da aplicação (React Router) |
+| | `ProtectedLayout` | Guard de autenticação nas rotas protegidas |
+| | `TaskContext` | Estado global das tarefas (React Context) |
+| | `api.js` | Camada de comunicação HTTP com o backend |
+| | `supabaseClient` | Cliente Supabase para autenticação no frontend |
+| | `constants.js` | Labels, estilos e mapeamentos centralizados |
+| **Backend** | `main.py` | Entrada do servidor FastAPI, configuração CORS |
+| | `routes/auth.py` | Rota `GET /me` — retorna dados do usuário autenticado |
+| | `routes/tasks.py` | CRUD completo: `POST`, `GET`, `PUT`, `DELETE` em `/tasks` |
+| | `dependencies/auth.py` | Validação de JWT, extração de token, cliente autenticado |
+| | `models/task.py` | Modelos Pydantic (`TaskCreate`, `TaskUpdate`) |
+| | `database.py` | Inicialização do cliente Supabase |
+| **Banco** | Supabase | Autenticação de usuários + banco PostgreSQL para tarefas |
+
+### Fluxo de Dados
+
+1. **Autenticação:** O usuário faz login/cadastro pelo Supabase Auth (SDK no frontend). O Supabase retorna um JWT.
+2. **Requisições autenticadas:** O frontend envia o JWT no header `Authorization: Bearer` em todas as chamadas HTTP ao backend.
+3. **Validação no backend:** O `dependencies/auth.py` extrai e valida o token, obtendo os dados do usuário via `supabase.auth.get_user()`.
+4. **CRUD de tarefas:** O backend opera diretamente no banco PostgreSQL via SDK do Supabase, filtrando por `user_id` para isolar dados entre usuários.
+5. **Resposta ao frontend:** Os dados são transformados (`toApiTask` / `fromApiTask`) para alinhar nomenclatura (snake_case ↔ camelCase) entre backend e frontend.
+
+---
+
+## Testes
 
 ### Como Instalar as Dependências de Testes
 
@@ -177,36 +280,41 @@ Para verbose com detalhes:
 pytest -v
 ```
 
-### Quantidade de Testes Implementados
+### Descrição dos Grupos de Testes
 
-> **TODO:** Informar a quantidade total de testes.
+| Grupo | Arquivo | Descrição | Qtd |
+|---|---|---|---|
+| **Autenticação** | `test_auth.py` | Valida token válido, falha de autenticação, token ausente e formato inválido de token | 4 |
+| **Tarefas — Criação** | `test_post.py` | Valida criação de tarefa com dados completos e retorno 200 | 1 |
+| **Tarefas — Listagem** | `test_get.py` | Valida listagem de tarefas filtrando apenas as do usuário autenticado | 1 |
+| **Tarefas — Atualização** | `test_put.py` | Valida atualização com sucesso e retorno 404 quando tarefa não existe | 2 |
+| **Tarefas — Exclusão** | `test_delete.py` | Valida exclusão com sucesso e retorno 404 quando tarefa não existe | 2 |
+| **Total** | | | **10** |
 
-```
-Total de testes implementados: __
-```
+> **Observação:** Todos os testes utilizam mocks do cliente Supabase (`ClienteSupabaseFake`) e `monkeypatch` do pytest para isolar o backend do banco de dados real. A rota `GET /me` é usada nos testes de autenticação para validar o fluxo completo de extração e validação de token.
 
 ### Resultado da Execução dos Testes
 
-> **TODO:** Colar aqui a saída do comando `pytest -v` após executar os testes.
+```bash
+$ pytest -v
 
+server/tests/test_auth.py::test_autenticacao_valida            PASSED
+server/tests/test_auth.py::test_autenticacao_falha             PASSED
+server/tests/test_auth.py::test_autenticacao_sem_token         PASSED
+server/tests/test_auth.py::test_autenticacao_formato_token_invalido PASSED
+server/tests/test_post.py::test_criar_tarefa                   PASSED
+server/tests/test_get.py::test_listar_tarefas                  PASSED
+server/tests/test_put.py::test_atualizar_tarefa_sucesso        PASSED
+server/tests/test_put.py::test_atualizar_tarefa_falha          PASSED
+server/tests/test_delete.py::test_deletar_tarefa_sucesso       PASSED
+server/tests/test_delete.py::test_deletar_tarefa_nao_encontrada PASSED
+
+============================== 10 passed ==============================
 ```
-Cole aqui a saída do pytest
-```
-
-### Descrição dos Grupos de Testes
-
-> **TODO:** Descrever o que cada grupo de testes valida.
-
-| Grupo | Descrição | Qtd |
-|---|---|---|
-| **Autenticação** | Valida fluxo de login, registro e obtenção de usuário atual | __ |
-| **Tarefas — CRUD** | Valida criação, listagem, atualização e exclusão de tarefas | __ |
-| **Validação de Modelos** | Valida regras de negócio dos Pydantic models (título vazio, datas inválidas) | __ |
-| **Autorização** | Valida que usuários não autenticados recebem erro 401/403 | __ |
 
 ---
 
-## 📄 Licença
+## Licença
 
 Este projeto é licenciado sob a [Apache License 2.0](LICENSE).
 
